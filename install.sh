@@ -6,7 +6,7 @@
 
 ########## Variables
 
-dir=~/dotfiles                    # dotfiles directory
+dir=~/code/dotfiles                    # dotfiles directory
 olddir=~/dotfiles_old             # old dotfiles backup directory
 #files="spacemacs bashrc vimrc vim zshrc oh-my-zsh"    # list of files/folders to symlink in homedir
 files=`cd $dir; ls -1d .??*`
@@ -28,8 +28,7 @@ echo "...done"
 for file in $files; do
     if [[ "$file" == ".git" || "$file" == ".DS_Store" ]]; then
 	    echo "Skipping $file"
-    else
-    		    
+    else		    
         echo "Moving any existing $file dotfiles from ~ to $olddir"
 	mv ~/$file ~/dotfiles_old/
     	echo "Creating symlink to $file in home directory."
