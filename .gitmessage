@@ -1,0 +1,23 @@
+
+## 50 characters title ###########################
+# <type>(<optional scope>): <description>
+# type: feat, fix, docs, style, refactor, perf, test, chore
+## 72 character wrapped longer description #############################
+## if breaking change start with `BREAKING CHANGE: `
+
+Why:
+
+ * 
+
+This change addreses the need by:
+
+ *
+
+#Resolves:
+## you can refer to jira issues, like JBIDE-1234
+
+## Tips on how to write commit messages and why line length matters:
+## http://chris.beams.io/posts/git-commit/
+## http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html
+
+
