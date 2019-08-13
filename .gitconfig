@@ -1,0 +1,83 @@
+[user]
+	name = Max Rydahl Andersen
+	email = max@xam.dk
+
+[alias]
+	 squash = "!f(){ CUR=`git rev-parse HEAD` && git reset --soft ${1} && git commit -m \"$(git log --format=%B ${1}..${CUR})\"; };f"
+	ch = "!sh -c 'git rebase -i HEAD~$1' -"
+        co = checkout
+        cp = cherry-pick
+        st = status -s
+        cl = clone
+        ci = commit
+        co = checkout
+        br = branch 
+        diff = diff --word-diff
+        dc = diff --cached	
+	unadd = reset HEAD
+	lg = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr, %an/%cn)%Creset' --abbrev-commit --date=relative
+        ll = log --pretty=format:'%C(red)%h%Cred%d %Creset %s %Cgreen(%cr, %an/%cn)' --decorate --numstat --date=relative
+	wdiff = diff --color-words
+        stat = status -sb
+	apply-pr = "!f() { curl $1.patch | git am --signoff; }; f"
+	pr = pull-request
+	whatadded = log --diff-filter=A
+	fdiff = diff --name-status
+	chlogm = !sh -c 'git log $1...$2  --pretty=format:\"* %s [%h](http://github.com/$3/$4/commit/%H) %aN\"' -
+[core]
+	autocrlf = input
+	excludesfile = /Users/max/.gitignore
+	pager = less -F -X
+[difftool "sourcetree"]
+	cmd = opendiff \"$LOCAL\" \"$REMOTE\"
+	path = 
+[mergetool "sourcetree"]
+	cmd = /Applications/SourceTree.app/Contents/Resources/opendiff-w.sh \"$LOCAL\" \"$REMOTE\" -ancestor \"$BASE\" -merge \"$MERGED\"
+	trustExitCode = true
+[color]
+	ui = true
+[diff]
+	tool = bc3
+[mege] 
+        tool = p4merge
+[branch]
+	autosetuprebase = always
+
+[gerrit]
+  createchangeid = true
+[credential]
+	helper = osxkeychain
+[push]
+	default = simple
+[merge]
+	tool = vscode
+	conflictstyle = diff3
+[mergetool "p4mergetool"]
+	cmd = /Applications/p4merge.app/Contents/Resources/launchp4merge $PWD/$BASE $PWD/$REMOTE $PWD/$LOCAL $PWD/$MERGED
+[mergetool]
+	keepBackup = false
+	prompt = false
+	bc3 = trustExitCode
+[difftool "p4mergetool"]
+	cmd = /Applications/p4merge.app/Contents/Resources/launchp4merge $LOCAL $REMOTE
+[mergetool "Kaleidoscope"]
+	cmd = ksdiff --merge --output \"$MERGED\" --base \"$BASE\" -- \"$LOCAL\" --snapshot \"$REMOTE\" --snapshot
+	trustexitcode = true
+[difftool "Kaleidoscope"]
+	cmd = ksdiff --partial-changeset --relative-path \"$MERGED\" -- \"$LOCAL\" \"$REMOTE\"
+[difftool]
+	prompt = false
+[filter "media"]
+	clean = git-media-clean %f
+	smudge = git-media-smudge %f
+[gitreview]
+	username = maxandersen
+[commit]
+	template = /Users/max/.gitmessage
+[hub]
+	protocol = https
+[filter "lfs"]
+[mergetool "vscode"]
+	cmd = "code-insiders --wait "
+[difftool "vscode"]
+	cmd = "code-insiders --wait --diff  "
