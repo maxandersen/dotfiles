@@ -70,13 +70,14 @@ values."
      javascript
      go
      yaml
-     plantuml 
+     plantuml
+     restclient
      ) 
    ;; List of additional packages that will be installed without being
    ;; wrapped in a layer. If you need some configuration for these
    ;; packages, then consider creating a layer. You can also put the 
    ;; configuration in `dotspacemacs/user-config'.
-   dotspacemacs-additional-packages '(org-super-agenda org-autolist)
+   dotspacemacs-additional-packages '(org-super-agenda org-autolist easy-hugo)
    ;; A list of packages that cannot be updated.
    dotspacemacs-frozen-packages '()
    ;; A list of packages that will not be installed and loaded.
@@ -348,9 +349,25 @@ you should place your code here."
   ;; just do it 
   (setq vc-follow-symlinks t)
 
+
   (with-eval-after-load 'org
-    (setq-default dotspacemacs-configuration-layers
-                  '((org :variables org-projectile-file "todos.org")))
+
+    ;;; handle message links
+    (when (eq system-type 'darwin)          ; I only run MailMate on Mac
+      (org-link-set-parameters "message"
+                               :follow
+                               '(lambda (path) (shell-command (format "open 'message://%s'" path)))))
+
+
+      ;;; set created property start
+    (require 'org-expiry)
+    (org-expiry-insinuate)
+    (setq org-expiry-created-property-name "CREATED")
+
+    (setq org-treat-insert-todo-heading-as-state-change t)
+
+
+  ;;; set created property end
 
     (defun meeting-notes ()
       "Call this after creating an org-mode heading for where the notes for the meeting
@@ -377,6 +394,17 @@ should be. After calling this function, call 'meeting-done' to reset the environ
     :init
     (add-hook 'org-mode-hook (lambda () (org-autolist-mode)))
     ) 
+
+  (use-package evil-goggles
+    :ensure t
+    :config
+    (evil-goggles-mode)
+
+    ;; optionally use diff-mode's faces; as a result, deleted text
+    ;; will be highlighed with `diff-removed` face which is typically
+    ;; some red color (as defined by the color theme)
+    ;; other faces such as `diff-added` will be used for other actions
+    (evil-goggles-use-diff-faces))
 
   (use-package org-super-agenda :config (org-super-agenda-mode))
 
@@ -433,6 +461,9 @@ should be. After calling this function, call 'meeting-done' to reset the environ
 
   (setq org-directory "~/Dropbox/notes"
 	      org-agenda-files (list org-directory)
+        org-agenda-text-search-extra-files (quote (agenda-archives)) 
+        org-agenda-search-view-always-boolean t  ;; make it so search is like google. implicit and on terms and use "" for explicit string search
+
 	      ;; eisenhower http://www.tompurl.com/2015-12-29-emacs-eisenhower-matrix.html
 	      org-agenda-custom-commands '(
 					                           ("1" "Q1" tags-todo "+important+urgent")
@@ -479,7 +510,9 @@ should be. After calling this function, call 'meeting-done' to reset the environ
  '(org-babel-load-languages (quote ((ditaa . t) (plantuml . t))))
  '(org-ditaa-jar-path "/Users/max/code/org-mode/contrib/scripts/ditaa.jar")
  '(org-plantuml-jar-path "~/plantuml.jar")
- )
+ '(package-selected-packages
+   (quote
+    (evil-goggles ob-restclient ob-http company-restclient restclient know-your-http-well typescript-mode ht org-category-capture counsel swiper packed avy company iedit evil flycheck projectile helm helm-core ivy yasnippet multiple-cursors markdown-mode alert org-plus-contrib magit magit-popup git-commit with-editor async hydra rust-mode js2-mode s easy-hugo zonokai-theme zenburn-theme zen-and-art-theme yapfify yaml-mode ws-butler winum which-key wgrep web-mode web-beautify volatile-highlights vi-tilde-fringe uuidgen use-package underwater-theme ujelly-theme typit twilight-theme twilight-bright-theme twilight-anti-bright-theme tronesque-theme toxi-theme toml-mode toc-org tide tao-theme tangotango-theme tango-plus-theme tango-2-theme tagedit sunny-day-theme sudoku sublime-themes subatomic256-theme subatomic-theme spotify spaceline spacegray-theme soothe-theme solarized-theme soft-stone-theme soft-morning-theme soft-charcoal-theme smyx-theme smex smeargle slim-mode seti-theme scss-mode sass-mode reverse-theme reveal-in-osx-finder restart-emacs request ranger rainbow-delimiters railscasts-theme racer pyvenv pytest pyenv-mode py-isort purple-haze-theme pug-mode professional-theme popwin plantuml-mode planet-theme pip-requirements phoenix-dark-pink-theme phoenix-dark-mono-theme persp-mode pcre2el pbcopy pastels-on-dark-theme paradox pacmacs ox-gfm osx-trash osx-dictionary orgit organic-green-theme org-super-agenda org-projectile org-present org-pomodoro org-download org-bullets org-autolist open-junk-file omtose-phellack-theme oldlace-theme occidental-theme obsidian-theme noctilux-theme niflheim-theme neotree naquadah-theme mustang-theme move-text monokai-theme monochrome-theme molokai-theme moe-theme mmm-mode minimal-theme material-theme markdown-toc majapahit-theme magit-gitflow madhat2r-theme macrostep lush-theme lua-mode lorem-ipsum livid-mode live-py-mode linum-relative link-hint light-soap-theme less-css-mode launchctl js2-refactor js-doc jbeans-theme jazz-theme ivy-hydra ir-black-theme inkpot-theme info+ indent-guide hy-mode hungry-delete htmlize hl-todo highlight-parentheses highlight-numbers highlight-indentation hide-comnt heroku-theme hemisu-theme help-fns+ helm-make hc-zenburn-theme gruvbox-theme gruber-darker-theme grandshell-theme gotham-theme google-translate golden-ratio go-guru go-eldoc gnuplot gitignore-mode gitconfig-mode gitattributes-mode git-timemachine git-messenger git-link git-gutter-fringe git-gutter-fringe+ gh-md gandalf-theme fuzzy flyspell-correct-ivy flycheck-rust flycheck-pos-tip flx-ido flatui-theme flatland-theme firebelly-theme fill-column-indicator farmhouse-theme fancy-battery eyebrowse expand-region exec-path-from-shell evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-surround evil-search-highlight-persist evil-numbers evil-mc evil-matchit evil-magit evil-lisp-state evil-indent-plus evil-iedit-state evil-exchange evil-escape evil-ediff evil-commentary evil-args evil-anzu eval-sexp-fu espresso-theme emoji-cheat-sheet-plus emmet-mode elisp-slime-nav dumb-jump dracula-theme dockerfile-mode docker django-theme diff-hl darktooth-theme darkokai-theme darkmine-theme darkburn-theme dakrone-theme cython-mode cyberpunk-theme csv-mode counsel-projectile company-web company-tern company-statistics company-go company-emoji company-emacs-eclim company-anaconda column-enforce-mode color-theme-sanityinc-tomorrow color-theme-sanityinc-solarized coffee-mode clues-theme clean-aindent-mode cherry-blossom-theme cargo busybee-theme bubbleberry-theme birds-of-paradise-plus-theme badwolf-theme auto-yasnippet auto-highlight-symbol auto-dictionary auto-compile apropospriate-theme anti-zenburn-theme ample-zen-theme ample-theme alect-themes aggressive-indent afternoon-theme adoc-mode adaptive-wrap ace-window ace-link ac-ispell 2048-game))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
