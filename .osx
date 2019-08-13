@@ -1,3 +1,7 @@
+#!/usr/bin/env bash
+
+## settings for OSX and related apps
+
 # Specify the preferences directory for iTerm2
 defaults write com.googlecode.iterm2.plist PrefsCustomFolder -string "~/code/dotfiles/iterm2"
 # Tell iTerm2 to use the custom preferences in the directory
