@@ -460,7 +460,18 @@ should be. After calling this function, call 'meeting-done' to reset the environ
  
 
   (setq org-directory "~/Dropbox/notes"
-	      org-agenda-files (list org-directory)
+        org-capture-templates '(("t" "Todo [inbox]" entry
+                                       (file "~/Dropbox/notes/inbox.org")
+                                       "* TODO %i%? \n %U")
+                                      ("T" "Tickler" entry
+                                       (file "~/Dropbox/notes/tickler.org")
+                                       "* %i%? \n %U"))
+        org-agenda-files '(
+                           (format "%s/%s" org-directory "inbox.org")
+                           (format "%s/%s" org-directory "people.org")
+                           (format "%s/%s" org-directory "projects.org")
+                           (format "%s/%s" org-directory "tickler.org")
+                           )
         org-agenda-text-search-extra-files (quote (agenda-archives)) 
         org-agenda-search-view-always-boolean t  ;; make it so search is like google. implicit and on terms and use "" for explicit string search
 
@@ -489,8 +500,10 @@ should be. After calling this function, call 'meeting-done' to reset the environ
  	      org-default-notes-file (concat org-directory "/inbox.org")
         org-startup-with-inline-images t
         org-startup-indented t
-        org-refile-targets '((nil :maxlevel . 3)
-			                       (org-agenda-files :maxlevel . 3))
+        org-refile-targets '(("~/Dropbox/notes/projects.org" :maxlevel . 3)
+                             ("~/Dropbox/notes/people.org" :maxlevel . 3)
+                             ("~/Dropbox/notes/someday.org" :level . 1)
+                             ("~/Dropbox/notes/tickler.org" :maxlevel . 2))
 	      org-outline-path-complete-in-steps nil         ; Refile in a single go
 	      org-refile-use-outline-path t                  ; Show full paths for refiling
         )
