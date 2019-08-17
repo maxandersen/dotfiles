@@ -466,7 +466,7 @@ should be. After calling this function, call 'meeting-done' to reset the environ
                                       ("T" "Tickler" entry
                                        (file "~/Dropbox/notes/tickler.org")
                                        "* %i%? \n %U"))
-        org-agenda-files '(
+        org-agenda-files (list
                            (format "%s/%s" org-directory "inbox.org")
                            (format "%s/%s" org-directory "people.org")
                            (format "%s/%s" org-directory "projects.org")
