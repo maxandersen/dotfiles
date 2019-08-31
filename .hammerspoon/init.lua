@@ -1,20 +1,51 @@
 --hs.logger.defaultLogLevel = "verbose"
 
+-- SpoonInstall is the only spoon you need to install manually.
+-- http://www.hammerspoon.org/Spoons/SpoonInstall.html
+-- Once installed other spoons can be automatically installed.
 hs.loadSpoon("SpoonInstall")
 spoon.SpoonInstall.use_syncinstall = true
 Install=spoon.SpoonInstall
 
-Install:andUse("ReloadConfiguration")
-spoon.ReloadConfiguration:start()
-
-Install:andUse("UnsplashZ")
-
-
-
+-- define the yper/leader keys I prefer to use
 local hyper = {"alt", "cmd"}
 local hypershift = { "alt", "cmd", "shift" }
 local hypersmash = {"alt", "cmd", "ctrl" }
 
+-- ReloadConfiguration to restart Hammerspoon
+-- As I often ended up wit partial configs tat would
+-- fail to load i clear te watch paths and just use te otkey.
+Install:andUse("ReloadConfiguration",
+               {
+                 config = { watch_paths = {} },
+                 hotkeys = { reloadConfiguration = { hypersmash, "h"} }
+               }
+)
+
+
+
+Install:andUse("UnsplashZ")
+
+ht = hs.loadSpoon("HammerText")
+ht.keywords ={
+  nname = "Max Rydahl Andersen",
+  ddate = function() return os.date("%Y-%m-%d") end,
+}
+ht:start()
+
+--[[Install:andUse("HammerText",
+               {
+                 start = true,
+                 config = {
+                   keywords = {
+                     xdate = function() return os.date("%B %d, %Y") end,
+                     nname = "Max Rydahl Andersen"
+                   }
+                 }
+               }
+)
+
+--]]
 
 Install:andUse("WindowGrid",
                {
@@ -22,8 +53,22 @@ Install:andUse("WindowGrid",
                  hotkeys = {show_grid = {hyper, "g"}},
                  start = true
                }
-)
+) 
 
+Install:andUse("PasswordGenerator",
+               {
+                 config = {
+                   password_style = "xkcd",
+                   word_count = 5,
+                   word_leet = 2,
+                   word_separators = "-",
+                   word_uppercase = 1
+                 },
+                 hotkeys = {  
+                   paste =  {hyper,"x"} 
+                 }
+               }
+)
 
 local hotkey = require "hs.hotkey"
 local grid = require "hs.grid"
@@ -72,6 +117,23 @@ hotkey.bind(hypershift, 'left', grid.resizeWindowThinner)
 
 hotkey.bind(hyper, 'm', grid.maximizeWindow)
 
+Install:andUse("Keychain")
+spoon.Keychain.logger.defaultLogLevel = "verbddose"
+
+
+function mountdrives()
+  hs.applescript.applescript([[
+    tell application "Finder"
+      try
+        mount volume "smb://admin@blackdata.local/media"
+        mount volume "smb://admin@blackdata.local/photo"
+        mount volume "smb://max@blackdata.local/backup"
+
+      end try
+    end tell
+    ]])
+
+end
 -- translate
 local wm=hs.webview.windowMasks
 Install:andUse("PopupTranslateSelection",
@@ -138,8 +200,8 @@ layouts = {
     name="Writing Docs",
     description="Google Doc For fun and profit",
     apps={
-      {"Opera", nil, screen, positions.centered, nil, nil},
-      {"Tweetbot", nil, screen, positions.right30, nil, nil},
+      {"Opera"},
+      {"Tweetbot"},
       {"MailMate"}
     }
   },
@@ -150,12 +212,10 @@ layouts = {
     }
   },
   {
-    name="Work",
+    name="E-Mail",
     description="Pedal to the metal",
     apps={
-      {"Firefox", nil, screen, positions.maximized, nil, nil},
-      {"Slack",   nil, screen, positions.maximized, nil, nil},
-      {"Twitter", nil, screen, positions.right30, nil, nil},
+      {"MailMate"},
     }
   },
 }
@@ -247,6 +307,7 @@ hs.window.filter.default:subscribe(hs.window.filter.windowFocused,
                                      print(hs.inspect(window))
                                      print(window:isStandard())
                                      print(hs.inspect(window:zoomButtonRect()))
+                                     print(window:application())
 end)
 
 
@@ -257,12 +318,12 @@ end
 
 -- https://github.com/Hammerspoon/hammerspoon/issues/547
 bigwl=hs.window.layout.new({ -- big layout
-    
+    screens={['C49RG9x']="0,0"},
     -- Opera/safari windows, excluding preferences and fullscreen windows (for video)
     -- allowScreens='0,0' so that it only applies to windows on the main screen, 
     -- so in desk mode i can temporarily "tear off" Safari windows to the side 
     -- screens for manual management
-    {{['Opera']={hasTitlebar=true,allowScreens='0,0',fullscreen=false,rejectTitles={'^Address bar drop down$'}}},
+    {{['Opera']={hasTitlebar=true,fullscreen=false,rejectTitles={'^Address bar drop down$'}}},
       -- main window in the middle, 2 windows tiled on the left side, remaining 
       -- windows on the right; the selector "closest" lets me change the "main" 
       -- window by sloppily moving it to the center (I use hs.grid)
@@ -274,11 +335,12 @@ bigwl=hs.window.layout.new({ -- big layout
     {'Screen Sharing','tile [0,0,100,100] 0,0'},
     {'Tweetbot', 'tile [18.75,0,31.25,100] 0,0'},
     {'Rambox', 'tile [12.5,0,31.25,100] 0,0'},
+    {{['Textual IRC Client']={allowRoles="AXStandardWindow"}}, 'tile [12.5,0,31.25,100] 0,0'},
     {'Messages', 'tile [12.5,6,31.25,50] 0,0'},
 
     {'iTerm2', 'tile [62.50,0,81.25,100] 0,0'},
     {'Spotify','tile [62.50,50,100,100] 0,0'},
-    {'BusyCal', 'tile [81.25,0,100,100] 0,0'},
+    {['BusyCal']={rejectTitles={"General"}}, 'tile [81.25,0,100,100] 0,0'},
     -- Left 50%
     { hs.window.filter.new(
         { MailMate = { allowRoles = "AXStandardWindow", rejectTitles="Activity Viewer" } }), "tile 2 focused 2x1 [0,0,31.25,100] 0,0" }
