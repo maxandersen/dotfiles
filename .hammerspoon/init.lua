@@ -1,4 +1,5 @@
 --hs.logger.defaultLogLevel = "verbose"
+require("hs.ipc") -- to enable cli interaction
 
 -- SpoonInstall is the only spoon you need to install manually.
 -- http://www.hammerspoon.org/Spoons/SpoonInstall.html
@@ -26,12 +27,13 @@ Install:andUse("ReloadConfiguration",
 
 Install:andUse("UnsplashZ")
 
-ht = hs.loadSpoon("HammerText")
+--[[ht = hs.loadSpoon("HammerText")
 ht.keywords ={
   nname = "Max Rydahl Andersen",
   ddate = function() return os.date("%Y-%m-%d") end,
 }
 ht:start()
+--]]
 
 --[[Install:andUse("HammerText",
                {
@@ -59,19 +61,39 @@ Install:andUse("PasswordGenerator",
                {
                  config = {
                    password_style = "xkcd",
-                   word_count = 5,
-                   word_leet = 2,
+                   word_count = 3,
+                   word_leet = 1,
                    word_separators = "-",
                    word_uppercase = 1
-                 },
-                 hotkeys = {  
-                   paste =  {hyper,"x"} 
-                 }
+                 }, hotkeys = {  
+                  copypaste =  {hyper,"x"} 
+                }
                }
 )
 
 local hotkey = require "hs.hotkey"
 local grid = require "hs.grid"
+
+hs.hotkey.bind(hypersmash, "f", function() 
+  local win = hs.window.focusedWindow()
+
+  if(win == null) then
+    local frontapp = hs.application.frontmostApplication()
+    print(frontapp)
+    print(frontapp:focusedWindow())
+    print(hs.inspect(frontapp:allWindows()))
+  end
+
+  local f = win:frame()
+  local screen = win:screen()
+  local max = screen:frame()
+
+--  f.x = max.x
+--  f.y = max.y
+  f.w = 1920
+  f.h = 1080
+  win:setFrame(f)
+end)
 
 function pushWindowDownMore()
   hs.grid.pushWindowDown()
@@ -128,7 +150,6 @@ function mountdrives()
         mount volume "smb://admin@blackdata.local/media"
         mount volume "smb://admin@blackdata.local/photo"
         mount volume "smb://max@blackdata.local/backup"
-
       end try
     end tell
     ]])
@@ -146,6 +167,18 @@ Install:andUse("PopupTranslateSelection",
                  }
                }
 )
+
+Install:andUse("PopupConjugateSelection",
+               {
+                 config = {
+                   popup_style = wm.utility|wm.HUD|wm.titled|wm.closable|wm.resizable,
+                 },
+                 hotkeys = {
+                   conjugate_to_fr = { hypersmash, "c" }
+                 }
+               }
+)
+
 
 -- keyboard info
 HSKeybindings_visible = false
@@ -195,6 +228,55 @@ positions = {
 -- Layouts
 --
 
+-- https://github.com/Hammerspoon/hammerspoon/issues/547
+focusbrowserwl=hs.window.layout.new({
+    screens={['C49RG9x']="0,0"},
+    -- Opera/safari windows, excluding preferences and fullscreen windows (for video)
+    -- allowScreens='0,0' so that it only applies to windows on the main screen, 
+    -- so in desk mode i can temporarily "tear off" Safari windows to the side 
+    -- screens for manual management
+    {{['Opera']={allowScreens='0,0', hasTitlebar=true,fullscreen=false,rejectTitles={'^Address bar drop down$'}}},
+      -- main window in the middle, 2 windows tiled on the left side, remaining 
+      -- windows on the right; the selector "closest" lets me change the "main" 
+      -- window by sloppily moving it to the center (I use hs.grid)
+      'move 1 closest [31.25,0,62.50,100] 0,0 | tile 2 vert [0,0,31.25,100] 0,0',
+      'tile all 2x1 [62.5,0,100,100] 0,0'},
+    { hs.window.filter.new(
+        { MailMate = { allowRoles = "AXStandardWindow", rejectTitles="Activity Viewer" } }), "tile 2 focused 2x1 [0,0,31.25,100] 0,0" }
+}, "FocusBrowser")
+
+focusmailwl=hs.window.layout.new({
+    screens={['C49RG9x']="0,0"},
+    {{['Opera']={allowScreens='0,0', hasTitlebar=true,fullscreen=false,rejectTitles={'^Address bar drop down$'}}},
+      "tile 2 focused 2x1 [0,0,31.25,100] 0,0"    },
+    { hs.window.filter.new(
+        { MailMate = { allowRoles = "AXStandardWindow", rejectTitles="Activity Viewer" } }),
+      'move 1 closest [31.25,0,62.50,100] 0,0 | tile 2 vert [0,0,31.25,100] 0,0',
+      'tile all 2x1 [62.5,0,100,100] 0,0' }
+}, "FocusMail")
+
+sharedbigwl=hs.window.layout.new({ -- shared big layout
+    screens={['C49RG9x']="0,0"},
+    -- Finder windows also tiled on the right
+    {'Finder','tile all 2x1 [70,0,100,100] 0,0'},
+    -- Screen Sharing always at the top left whatever the resolution
+    {'Screen Sharing','tile [0,0,100,100] 0,0'},
+    {'Tweetbot', 'tile [18.75,0,31.25,100] 0,0'},
+    {'Rambox', 'tile [12.5,0,31.25,100] 0,0'},
+    {{['Textual IRC Client']={allowRoles="AXStandardWindow"}}, 'tile [12.5,0,31.25,100] 0,0'},
+    {'Messages', 'tile [12.5,6,31.25,50] 0,0'},
+    {'DevHub', 'tile [0,0,31.25,100] 0,0'},
+    
+    {'iTerm2', 'tile [62.50,0,81.25,100] 0,0'},
+    {'Spotify','tile [62.50,50,100,100] 0,0'},
+    {{['BusyCal']={rejectTitles={"General"}, allowRoles="AXStandardWindow"}}, 'tile [62.50,0,100,100] 0,0'},
+   },'SharedBig')
+
+--focusbrowserwl:start()
+--focusmailwl:start()–
+sharedbigwl:start()
+
+
 layouts = {
   {
     name="Writing Docs",
@@ -203,6 +285,19 @@ layouts = {
       {"Opera"},
       {"Tweetbot"},
       {"MailMate"}
+    },
+    layouts={
+      focusbrowserwl
+    }
+  },
+  {
+    name="Mail",
+    description="Pedal to the metal",
+    apps={
+      {"MailMate"},
+    },
+    layouts={
+      focusmailwl
     }
   },
   {
@@ -212,49 +307,86 @@ layouts = {
     }
   },
   {
-    name="E-Mail",
-    description="Pedal to the metal",
+    name="streaming",
+    description="Kill anything that can interrupt",
     apps={
+      {"Opera"},
+      {"Bluejeans"},
+      {"Ecamm Live"},
+    },
+    kill={
+      {"Rambox"},
+      {"DevHub"},
+      {"Tweetbot"},
+      {"Messages"},
       {"MailMate"},
+      {"Cisco Webex Meetings"},
+      {"Spotify"}
+    },
+    layouts={
+      focusbrowserwl
     }
-  },
+  }
 }
-currentLayout = null
+
+currentLayout = nil
 
 -- launch apps if needed and apply layout
 function applyLayout(layout)
   local screen = hs.screen.mainScreen()
 
-  local chosenLayout = layout.apps
+  local chosenApps = layout.apps
 
+  print("Current Layout " .. hs.inspect(currentLayout, {depth=2}))
+  previousLayout = currentLayout
   currentLayout = layout
 
-  -- hs.notify.show("Hammerspoon", string.format("Applying layout '%s", layout.name),"")
-
-  --[[
-  for _, win in ipairs(hs.window.allWindows()) do
-    if win then
-      win:minimize()
-    else
-      print("Found a nil window for: "..win:application():name())
+  -- stop whatever layout was active in previouslayout
+  print("Previous layout " .. hs.inspect(previousLayout, {depth=1}))
+  if previousLayout then
+    print("Stopping previous layouts")
+    for _, lo in ipairs(previousLayout.layouts) do
+      print(lo)
+      lo:stop()
     end
   end
-  --]]
 
+  -- start layouts for new layout
+  print("Starting layouts")
+  for _, lo in ipairs(currentLayout.layouts) do
+    print(lo)
+    lo:start()
+  end
+
+  -- hide every app
   for _, app in ipairs(hs.application.runningApplications()) do
     if app then
-      app:hide()
+  --    app:hide()
     end
-                                                           end
+  end
 
-  for _,row in pairs(chosenLayout) do
+  -- launch or focus the apps chosen
+  for _,row in pairs(chosenApps) do
     app = row[1]
     hs.application.launchOrFocus(app)
   end
 
-  hs.layout.apply(chosenLayout, function(windowTitle, layoutWindowTitle)
-                    return string.sub(windowTitle, 1, string.len(layoutWindowTitle)) == layoutWindowTitle
-  end)
+  if currentLayout["kill"] ~= nil then
+    for _,row in pairs(currentLayout["kill"]) do
+      app = row[1]
+
+      print("Trying to kill", app)
+      todie = hs.appfinder.appFromName(app)
+      print(app, hs.inspect(todie))
+      if todie then
+        hs.application.kill(todie)
+      end
+    end
+  else
+    print(hs.inspect(currentLayout.kill, {depth=2}))
+    print("Nothing to kill")
+  end
+
 end
 
 layoutChooser = hs.chooser.new(function(selection)
@@ -286,6 +418,9 @@ hs.screen.watcher.new(function()
     applyLayout(currentLayout)
 end):start()
 
+
+applyLayout(layouts[1])
+
 -- magic layouts
 
 -- for debugging
@@ -301,13 +436,16 @@ function dump(o)
     return tostring(o)
   end
 end
+
 hs.window.filter.default:subscribe(hs.window.filter.windowFocused,
                                    function(window, appName)
-                                     print('Created: -' .. window:title() .. '- role: -' .. window:role() .. '-' .. window:subrole() .. " - " .. appName)
-                                     print(hs.inspect(window))
-                                     print(window:isStandard())
-                                     print(hs.inspect(window:zoomButtonRect()))
-                                     print(window:application())
+                                     if true then
+                                       print('Created: -' .. window:title() .. '- role: -' .. window:role() .. '-' .. window:subrole() .. " - " .. appName)
+                                       print(hs.inspect(window))
+                                       print(window:isStandard())
+                                       print(hs.inspect(window:zoomButtonRect()))
+                                       print(window:application())
+                                     end
 end)
 
 
@@ -316,39 +454,7 @@ function cell(x,y,w,h)
 end
 
 
--- https://github.com/Hammerspoon/hammerspoon/issues/547
-bigwl=hs.window.layout.new({ -- big layout
-    screens={['C49RG9x']="0,0"},
-    -- Opera/safari windows, excluding preferences and fullscreen windows (for video)
-    -- allowScreens='0,0' so that it only applies to windows on the main screen, 
-    -- so in desk mode i can temporarily "tear off" Safari windows to the side 
-    -- screens for manual management
-    {{['Opera']={hasTitlebar=true,fullscreen=false,rejectTitles={'^Address bar drop down$'}}},
-      -- main window in the middle, 2 windows tiled on the left side, remaining 
-      -- windows on the right; the selector "closest" lets me change the "main" 
-      -- window by sloppily moving it to the center (I use hs.grid)
-    'move 1 closest [31.25,0,62.50,100] 0,0 | tile 2 vert [0,0,31.25,100] 0,0',
-    'tile all 2x1 [62.5,0,100,100] 0,0'},
-    -- Finder windows also tiled on the right
-    {'Finder','tile all 2x1 [70,0,100,100] 0,0'},
-    -- Screen Sharing always at the top left whatever the resolution
-    {'Screen Sharing','tile [0,0,100,100] 0,0'},
-    {'Tweetbot', 'tile [18.75,0,31.25,100] 0,0'},
-    {'Rambox', 'tile [12.5,0,31.25,100] 0,0'},
-    {{['Textual IRC Client']={allowRoles="AXStandardWindow"}}, 'tile [12.5,0,31.25,100] 0,0'},
-    {'Messages', 'tile [12.5,6,31.25,50] 0,0'},
-
-    {'iTerm2', 'tile [62.50,0,81.25,100] 0,0'},
-    {'Spotify','tile [62.50,50,100,100] 0,0'},
-    {['BusyCal']={rejectTitles={"General"}}, 'tile [81.25,0,100,100] 0,0'},
-    -- Left 50%
-    { hs.window.filter.new(
-        { MailMate = { allowRoles = "AXStandardWindow", rejectTitles="Activity Viewer" } }), "tile 2 focused 2x1 [0,0,31.25,100] 0,0" }
-
-                              },'SHARED')
-
-bigwl:start()
-
+-- pause/toggle live layouts
 paused = hs.settings.get("pauseLayout")
 if paused == nil then
   paused = false
@@ -379,6 +485,18 @@ hotkey.bind(hyper, 'l', toggleLayout)
 -- commander
 res = hs.screen.find('-500,240 700x1300')
 print("SCREEN:" .. hs.inspect(res, {metatables=true, depth=4}))
+
+-- wifi/network watching
+function wifiwatcher(wather, message, interface, rssi, rate)
+  print(message)
+  print(interface)
+  print(rssi)
+  print(rate)
+end
+
+wifiWatcher = hs.wifi.watcher.new(wifiwatcher)
+wifiWatcher:watchingFor({"SSIDChange", "linkChange", "powerChange"})
+wifiWatcher:start()
 
 -- show logo to indicate restart
 Install:andUse('FadeLogo')

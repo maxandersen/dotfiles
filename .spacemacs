@@ -32,7 +32,7 @@ This function should only modify configuration layer settings."
 
    ;; List of configuration layers to load.
    dotspacemacs-configuration-layers
-   '(
+   '(ruby
      windows-scripts
      python
      lua
@@ -55,34 +55,36 @@ This function should only modify configuration layer settings."
      multiple-cursors
      docker
      ranger
-     emoji 
+     emoji
+     lsp
      asciidoc
      games
-     spotify 
+     spotify
      (org :variables
-          org-enable-github-support t)
+          org-enable-github-support t
+          org-want-todo-bindings t)
      ;; (shell :variables
      ;;        shell-default-height 30
      ;; shell-default-position 'bottom)
      spell-checking
-     syntax-checking 
+     syntax-checking
      version-control
      osx
      themes-megapack
      evil-commentary
-     html 
-     java
+     html
+     (java :variables java-backend 'lsp)
      javascript
      go
      yaml
      plantuml
      restclient
-     ) 
+     )
    ;; List of additional packages that will be installed without being
    ;; wrapped in a layer. If you need some configuration for these
    ;; packages, then consider creating a layer. You can also put the
    ;; configuration in `dotspacemacs/user-config'.
-   dotspacemacs-additional-packages '(org-super-agenda org-autolist easy-hugo)
+   dotspacemacs-additional-packages '(org-super-agenda org-autolist easy-hugo org-ql yequake quelpa-use-package org-sidebar ox-reveal)
    ;; A list of packages that cannot be updated.
    dotspacemacs-frozen-packages '()
 
@@ -223,7 +225,7 @@ It should only modify the values of Spacemacs settings."
    dotspacemacs-colorize-cursor-according-to-state t
 
    ;; Default font or prioritized list of fonts.
-   dotspacemacs-default-font '("Source Code Pro"
+   dotspacemacs-default-font '("JetBrains Mono"
                                :size 13
                                :weight normal
                                :width normal)
@@ -477,9 +479,10 @@ layers configuration.
 This is the place where most of your configurations should be done. Unless it is
 explicitly specified that a variable should be set before a package is loaded,
 you should place your code here."
- 
-  (spacemacs/set-leader-keys "aob" #'org-switchb) 
-  
+
+  (delete-selection-mode 1) ; make selection get deleted on typing/pasting to be sane
+  (spacemacs/set-leader-keys "aob" #'org-switchb)
+
   ;;(with-eval-after-load 'org-agenda
   ;;  (require 'org-projectile)
   ;;  (push (org-projectile:todo-files) org-agenda-files))
@@ -489,12 +492,14 @@ you should place your code here."
   (setq spacemacs-useless-buffers-regexp '("^ "))
 
   ;; stop asking if you want to follow symlinks to git controlled files.
-  ;; just do it 
+  ;; just do it
   (setq vc-follow-symlinks t)
 
 
   (with-eval-after-load 'org
+    (setq org-use-speed-commands t)
 
+    
     ;;; handle message links
     (when (eq system-type 'darwin)          ; I only run MailMate on Mac
       (org-link-set-parameters "message"
@@ -505,12 +510,13 @@ you should place your code here."
       ;;; set created property start
     (require 'org-expiry)
     (org-expiry-insinuate)
-    (setq org-expiry-created-property-name "CREATED")
+    (setq org-expiry-inactive-timestamps t)
 
     (setq org-treat-insert-todo-heading-as-state-change t)
 
 
-  ;;; set created property end
+    ;;; set created property end
+
 
     (defun meeting-notes ()
       "Call this after creating an org-mode heading for where the notes for the meeting
@@ -523,7 +529,7 @@ should be. After calling this function, call 'meeting-done' to reset the environ
       (text-scale-set 2)                                  ;; Text is now readable by others
       (fringe-mode 0)
       (message "When finished taking your notes, run meeting-done."))
-    
+
     (defun meeting-done ()
       "Attempt to 'undo' the effects of taking meeting notes."
       (interactive)
@@ -532,11 +538,53 @@ should be. After calling this function, call 'meeting-done' to reset the environ
       (fringe-mode 1)
       (winner-undo))                                ;; Put the windows back in place
     )
+
+    
+    (use-package quelpa-use-package
+      :ensure t
+      )
+
+;    (use-package bufler
+;      :quelpa (bufler :fetcher github :repo "alphapapa/bufler.el"
+;                      :files (:defaults (:exclude "helm-bufler.el"))))
+
+    (use-package yequake
+      :quelpa (yequake :fetcher github :repo "alphapapa/yequake")
+
+      :custom
+      (yequake-frames
+       '(("org-capture" 
+          (buffer-fns . (yequake-org-capture))
+          (width . 0.50)
+          (height . 0.5)
+          (alpha . 0.95)
+          (frame-parameters . ((undecorated . t)
+                               (skip-taskbar . t)
+                               (sticky . t)))))))
+
+    (use-package ox-reveal
+      :ensure t
+      :config (setq org-reveal-root "https://cdn.jsdelivr.net/npm/reveal.js")
+      )
+
+    (use-package org-super-agenda
+      :quelpa (org-super-agenda :fetcher github :repo "alphapapa/org-super-agenda")
+      :ensure t
+      :config (org-super-agenda-mode))
+
+    (use-package org-ql
+      :quelpa (org-ql :fetcher github :repo "alphapapa/org-ql")
+
+      )
+    (use-package org-sidebar
+      :quelpa (org-sidebar :fetcher github :repo "alphapapa/org-sidebar")
+      )
+
   (use-package org-autolist
     :ensure t
     :init
     (add-hook 'org-mode-hook (lambda () (org-autolist-mode)))
-    ) 
+    )
 
   (use-package evil-goggles
     :ensure t
@@ -549,45 +597,103 @@ should be. After calling this function, call 'meeting-done' to reset the environ
     ;; other faces such as `diff-added` will be used for other actions
     (evil-goggles-use-diff-faces))
 
-  (use-package org-super-agenda :config (org-super-agenda-mode))
 
   (setq org-super-agenda-groups
        '(;; Each group has an implicit boolean OR operator between its selectors.
-         (:name "Home" :tag ("home") :order 50)
-         (:name "Today"
+         (:name "This day"
                 :time-grid t
-                :todo "TODO" 
+                :todo ("TODO" "NEXT")
                 )
          (:name "Important/Urgent"
                 ;; Single arguments given alone
                 :tag ("important" "urgent")
                 )
-         (:name "Directs"
-                :tag ("baiju" "hector" "aslak" "shoubhik" "nimisha" "vikram") :order 15)
-          ;; Groups supply their own section names when none are given
-         (:todo "WAITING" :order 8)  ; Set order of this section
-         (:todo ("SOMEDAY" "TO-READ" "CHECK" "TO-WATCH" "WATCHING")
-                ;; Show this group at the end of the agenda (since it has the
-                ;; highest number). If you specified this group last, items
-                ;; with these todo keywords that e.g. have priority A would be
-                ;; displayed in that group instead, because items are grouped
-                ;; out in the order the groups are listed.
-                :order 9)
-         (:priority<= "A"
-                      ;; Show this section after "Today" and "Important", because
-                      ;; their order is unspecified, defaulting to 0. Sections
-                      ;; are displayed lowest-number-first.
-                      :order 1)
+
          ;; After the last group, the agenda will display items that didn't
          ;; match any of these groups, with the default order position of 99
-         )) 
+         ))
 
   (setq org-tag-alist
-	(append org-tag-alist '(
-				("important" . ?i)
-				("urgent"    . ?u)
-				)
-		      ))
+  (append org-tag-alist '(
+        ("important" . ?i)
+        ("urgent"    . ?u)
+        )
+          ))
+
+  (defun my-dnd-func (event)
+  (interactive "e")
+  (goto-char (nth 1 (event-start event)))
+  (x-focus-frame nil)
+  (let* ((payload (car (last event)))
+         (type (car payload))
+         (fname (cadr payload))
+         (img-regexp "\\(png\\|jp[e]?g\\)\\>"))
+    (cond
+     ;; insert image link
+     ((and  (eq 'drag-n-drop (car event))
+            (eq 'file type)
+            (string-match img-regexp fname))
+      (insert (format "[[%s]]" fname))
+      (org-display-inline-images t t))
+     ;; insert image link with caption
+     ((and  (eq 'C-drag-n-drop (car event))
+            (eq 'file type)
+            (string-match img-regexp fname))
+      (insert "#+ATTR_ORG: :width 300\n")
+      (insert (concat  "#+CAPTION: " (read-input "Caption: ") "\n"))
+      (insert (format "[[%s]]" fname))
+      (org-display-inline-images t t))
+     ;; C-drag-n-drop to open a file
+     ((and  (eq 'C-drag-n-drop (car event))
+            (eq 'file type))
+      (find-file fname))
+     ((and (eq 'M-drag-n-drop (car event))
+           (eq 'file type))
+      (insert (format "[[attachfile:%s]]" fname)))
+     ;; regular drag and drop on file
+     ((eq 'file type)
+      (insert (format "[[%s]]\n" fname)))
+     (t
+      (error "I am not equipped for dnd on %s" payload)))))
+
+
+  (define-key org-mode-map (kbd "<drag-n-drop>") 'my-dnd-func)
+  (define-key org-mode-map (kbd "<C-drag-n-drop>") 'my-dnd-func)
+  (define-key org-mode-map (kbd "<M-drag-n-drop>") 'my-dnd-func)
+
+  (defun my/org-sidebar ()
+    "Display my Org Sidebar."
+    (interactive)
+    (org-sidebar
+     :sidebars (make-org-sidebar
+                :name "My Sidebar"
+                :description "My sidebar items"
+                :items (org-ql (org-agenda-files)
+                         (and (not (done))
+                              (or (deadline auto)
+                                  (scheduled :on today)))
+                         :action element-with-markers))))
+
+
+  (defun my/org-today-sidebar ()
+    "Show my Org Today Sidebar."
+    (interactive)
+    (org-sidebar
+     :sidebars (make-org-sidebar
+                :name "Today"
+                :description "Today items"
+                :items (org-ql (org-agenda-files)
+                         (and (not (done))
+                              (or (deadline auto)
+                                  (scheduled :to today)))
+                         :action element-with-markers)
+                :super-groups '((:time-grid t)
+                                (:name "Overdue" :scheduled past :deadline past)
+                                (:name "Due today" :scheduled today :deadline today)
+                                (:tag "bills")
+                                (:priority "A")
+                                (:name "Non-tasks"
+                                       :todo nil)))))
 
   (defun org-my-auto-exclude-function (tag)
       (and (cond
@@ -596,11 +702,11 @@ should be. After calling this function, call 'meeting-done' to reset the environ
                (and (> hour 8) (< hour 19)))
              ))
            (concat "-" tag)))
-    
- 
-  
-  (setq org-agenda-auto-exclude-function 'org-my-auto-exclude-function)
- 
+
+
+
+  ;(setq org-agenda-auto-exclude-function 'org-my-auto-exclude-function)
+
 
   (setq org-directory "~/Dropbox/notes"
         org-capture-templates '(("t" "Todo [inbox]" entry
@@ -608,47 +714,57 @@ should be. After calling this function, call 'meeting-done' to reset the environ
                                        "* TODO %i%? \n %U")
                                       ("T" "Tickler" entry
                                        (file "~/Dropbox/notes/tickler.org")
-                                       "* %i%? \n %U"))
+                                       "* %i%? \nx%U"))
+        org-enforce-todo-dependencies t
         org-agenda-files (list
                            (format "%s/%s" org-directory "inbox.org")
                            (format "%s/%s" org-directory "people.org")
                            (format "%s/%s" org-directory "projects.org")
                            (format "%s/%s" org-directory "tickler.org")
                            )
-        org-agenda-text-search-extra-files (quote (agenda-archives)) 
+        org-agenda-text-search-extra-files (quote (agenda-archives))
         org-agenda-search-view-always-boolean t  ;; make it so search is like google. implicit and on terms and use "" for explicit string search
 
-	      ;; eisenhower http://www.tompurl.com/2015-12-29-emacs-eisenhower-matrix.html
-	      org-agenda-custom-commands '(
-					                           ("1" "Q1" tags-todo "+important+urgent")
-					                           ("2" "Q2" tags-todo "+important-urgent")
-					                           ("3" "Q3" tags-todo "-important+urgent")
-					                           ("4" "Q4" tags-todo "-important-urgent")
-					                           )
-	      org-todo-keywords '(
-			                      (sequence "NEXT(n)" "TODO(t)" "WAITING(w)" "|" "DONE(d)" "CANCELLED(c)")
-			                      (sequence "TASK(f)" "|" "DONE(d)")
-			                      )
+        ;; eisenhower http://www.tompurl.com/2015-12-29-emacs-eisenhower-matrix.html
+        org-agenda-custom-commands '(
+                                     ("0" "What is next"
+                                      ((org-ql-block '(and (todo)
+                                                           (not
+                                                            (descendants
+                                                             (todo "NEXT")
+                                                             )
+                                                            )
+                                                           )
+                                                     )
+                                       )
+                                      )
+                                     ("1" "Q1" tags-todo "+important+urgent")
+                                     ("2" "Q2" tags-todo "+important-urgent")
+                                     ("3" "Q3" tags-todo "-important+urgent")
+                                     ("4" "Q4" tags-todo "-important-urgent")
+                                     )
+        org-todo-keywords '(
+                            (sequence "NEXT(n)" "TODO(t)" "WAITING(w)" "|" "DONE(d)" "CANCELLED(c)")
+                            (sequence "TASK(f)" "|" "DONE(d)")
+                            )
 
 
-	      org-todo-keyword-faces '(("TASK" :background "gold" :foreground "black" :weight bold)
-				                         ("DONE" :background "forest green" :weight bold)
-				                         ("CANCELLED" :background "lime green" :foreground "black" :weight bold))
-	      
+        org-todo-keyword-faces '(("TASK" :background "gold" :foreground "black" :weight bold)
+                                 ("DONE" :background "forest green" :weight bold)
+                                 ("CANCELLED" :background "lime green" :foreground "black" :weight bold))
+
                                         ;org-secratary.el
-	      org-tags-exclude-from-inheritance '("project")
-	      org-stuck-projects '("+project/-DONE"
-			                       ("TODO" "TASK") ())
-	      ;; setup capture
- 	      org-default-notes-file (concat org-directory "/inbox.org")
+        org-tags-exclude-from-inheritance '("project")
+        ;; setup capture
+        org-default-notes-file (concat org-directory "/inbox.org")
         org-startup-with-inline-images t
         org-startup-indented t
         org-refile-targets '(("~/Dropbox/notes/projects.org" :maxlevel . 3)
                              ("~/Dropbox/notes/people.org" :maxlevel . 3)
                              ("~/Dropbox/notes/someday.org" :level . 1)
                              ("~/Dropbox/notes/tickler.org" :maxlevel . 2))
-	      org-outline-path-complete-in-steps nil         ; Refile in a single go
-	      org-refile-use-outline-path t                  ; Show full paths for refiling
+        org-outline-path-complete-in-steps nil         ; Refile in a single go
+        org-refile-use-outline-path t                  ; Show full paths for refiling
         )
   ))
 
@@ -682,3 +798,59 @@ should be. After calling this function, call 'meeting-done' to reset the environ
  '(evil-goggles-undo-redo-change-face ((t (:inherit diff-changed))))
  '(evil-goggles-undo-redo-remove-face ((t (:inherit diff-removed))))
  '(evil-goggles-yank-face ((t (:inherit diff-changed)))))
+(defun dotspacemacs/emacs-custom-settings ()
+  "Emacs custom settings.
+This is an auto-generated function, do not modify its content directly, use
+Emacs customize menu instead.
+This function is called at the very end of Spacemacs initialization."
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(custom-safe-themes
+   (quote
+    ("0598c6a29e13e7112cfbc2f523e31927ab7dce56ebb2016b567e1eff6dc1fd4f" "d91ef4e714f05fff2070da7ca452980999f5361209e679ee988e3c432df24347" "a8245b7cc985a0610d71f9852e9f2767ad1b852c2bdea6f4aadc12cce9c4d6d0" "73c69e346ec1cb3d1508c2447f6518a6e582851792a8c0e57a22d6b9948071b4" "834cbeacb6837f3ddca4a1a7b19b1af3834f36a701e8b15b628cad3d85c970ff" "1b8d67b43ff1723960eb5e0cba512a2c7a2ad544ddb2533a90101fd1852b426e" "fa2b58bb98b62c3b8cf3b6f02f058ef7827a8e497125de0254f56e373abee088" "341b2570a9bbfc1817074e3fad96a7eff06a75d8e2362c76a2c348d0e0877f31" "dbade2e946597b9cda3e61978b5fcc14fa3afa2d3c4391d477bdaeff8f5638c5" default)))
+ '(evil-want-Y-yank-to-eol nil)
+ '(lsp-ui-doc-max-width 80)
+ '(org-agenda-skip-additional-timestamps-same-entry t)
+ '(org-agenda-skip-deadline-if-done t)
+ '(org-agenda-skip-deadline-prewarning-if-scheduled t)
+ '(org-agenda-skip-scheduled-if-deadline-is-shown (quote repeated-after-deadline))
+ '(org-agenda-skip-scheduled-if-done t)
+ '(org-agenda-skip-timestamp-if-deadline-is-shown t)
+ '(org-agenda-skip-timestamp-if-done t)
+ '(org-babel-load-languages (quote ((ditaa . t) (plantuml . t))))
+ '(org-ditaa-jar-path "/Users/max/code/org-mode/contrib/scripts/ditaa.jar")
+ '(org-loop-over-headlines-in-active-region (quote start-level))
+ '(org-plantuml-jar-path "~/plantuml.jar")
+ '(org-stuck-projects (quote (":project:/-DONE" ("NEXT" "NEXTACTION") nil "")))
+ '(package-selected-packages
+   (quote
+    (zones pretty-hydra powershell ts spinner anzu white-sand-theme mmt powerline smartparens rebecca-theme log4e gntp org-mime skewer-mode simple-httpd lv parent-mode haml-mode fringe-helper git-gutter+ git-gutter flyspell-correct pos-tip flx exotica-theme highlight transient goto-chg json-mode tablist docker-tramp json-snatcher json-reformat diminish autothemer pkg-info epl web-completion-data dash-functional tern go-mode eclim bind-map bind-key anaconda-mode pythonic f markup-faces auto-complete popup evil-goggles ob-restclient ob-http company-restclient restclient know-your-http-well typescript-mode ht org-category-capture counsel swiper packed avy company iedit evil flycheck projectile helm helm-core ivy yasnippet multiple-cursors markdown-mode alert org-plus-contrib magit magit-popup git-commit with-editor async hydra rust-mode js2-mode s easy-hugo zonokai-theme zenburn-theme zen-and-art-theme yapfify yaml-mode ws-butler winum which-key wgrep web-mode web-beautify volatile-highlights vi-tilde-fringe uuidgen use-package underwater-theme ujelly-theme typit twilight-theme twilight-bright-theme twilight-anti-bright-theme tronesque-theme toxi-theme toml-mode toc-org tide tao-theme tangotango-theme tango-plus-theme tango-2-theme tagedit sunny-day-theme sudoku sublime-themes subatomic256-theme subatomic-theme spotify spaceline spacegray-theme soothe-theme solarized-theme soft-stone-theme soft-morning-theme soft-charcoal-theme smyx-theme smex smeargle slim-mode seti-theme scss-mode sass-mode reverse-theme reveal-in-osx-finder restart-emacs request ranger rainbow-delimiters railscasts-theme racer pyvenv pytest pyenv-mode py-isort purple-haze-theme pug-mode professional-theme popwin plantuml-mode planet-theme pip-requirements phoenix-dark-pink-theme phoenix-dark-mono-theme persp-mode pcre2el pbcopy pastels-on-dark-theme paradox pacmacs ox-gfm osx-trash osx-dictionary orgit organic-green-theme org-super-agenda org-projectile org-present org-pomodoro org-download org-bullets org-autolist open-junk-file omtose-phellack-theme oldlace-theme occidental-theme obsidian-theme noctilux-theme niflheim-theme neotree naquadah-theme mustang-theme move-text monokai-theme monochrome-theme molokai-theme moe-theme mmm-mode minimal-theme material-theme markdown-toc majapahit-theme magit-gitflow madhat2r-theme macrostep lush-theme lua-mode lorem-ipsum livid-mode live-py-mode linum-relative link-hint light-soap-theme less-css-mode launchctl js2-refactor js-doc jbeans-theme jazz-theme ivy-hydra ir-black-theme inkpot-theme info+ indent-guide hy-mode hungry-delete htmlize hl-todo highlight-parentheses highlight-numbers highlight-indentation hide-comnt heroku-theme hemisu-theme help-fns+ helm-make hc-zenburn-theme gruvbox-theme gruber-darker-theme grandshell-theme gotham-theme google-translate golden-ratio go-guru go-eldoc gnuplot gitignore-mode gitconfig-mode gitattributes-mode git-timemachine git-messenger git-link git-gutter-fringe git-gutter-fringe+ gh-md gandalf-theme fuzzy flyspell-correct-ivy flycheck-rust flycheck-pos-tip flx-ido flatui-theme flatland-theme firebelly-theme fill-column-indicator farmhouse-theme fancy-battery eyebrowse expand-region exec-path-from-shell evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-surround evil-search-highlight-persist evil-numbers evil-mc evil-matchit evil-magit evil-lisp-state evil-indent-plus evil-iedit-state evil-exchange evil-escape evil-ediff evil-commentary evil-args evil-anzu eval-sexp-fu espresso-theme emoji-cheat-sheet-plus emmet-mode elisp-slime-nav dumb-jump dracula-theme dockerfile-mode docker django-theme diff-hl darktooth-theme darkokai-theme darkmine-theme darkburn-theme dakrone-theme cython-mode cyberpunk-theme csv-mode counsel-projectile company-web company-tern company-statistics company-go company-emoji company-emacs-eclim company-anaconda column-enforce-mode color-theme-sanityinc-tomorrow color-theme-sanityinc-solarized coffee-mode clues-theme clean-aindent-mode cherry-blossom-theme cargo busybee-theme bubbleberry-theme birds-of-paradise-plus-theme badwolf-theme auto-yasnippet auto-highlight-symbol auto-dictionary auto-compile apropospriate-theme anti-zenburn-theme ample-zen-theme ample-theme alect-themes aggressive-indent afternoon-theme adoc-mode adaptive-wrap ace-window ace-link ac-ispell 2048-game)))
+ '(vc-follow-symlinks (quote ask))
+ '(yequake-frames
+   (quote
+    (("org-capture"
+      (buffer-fns yequake-org-capture)
+      (width . 0.5)
+      (height . 0.5)
+      (alpha . 0.95)
+      (frame-parameters
+       (undecorated . t)
+       (skip-taskbar . t)
+       (sticky . t)))))))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(evil-goggles-change-face ((t (:inherit diff-removed))))
+ '(evil-goggles-delete-face ((t (:inherit diff-removed))))
+ '(evil-goggles-paste-face ((t (:inherit diff-added))))
+ '(evil-goggles-undo-redo-add-face ((t (:inherit diff-added))))
+ '(evil-goggles-undo-redo-change-face ((t (:inherit diff-changed))))
+ '(evil-goggles-undo-redo-remove-face ((t (:inherit diff-removed))))
+ '(evil-goggles-yank-face ((t (:inherit diff-changed))))
+ '(markup-meta-face ((t (:stipple nil :foreground "gray100" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 150 :width normal :foundry "unknown" :family "Monospace")))))
+)
