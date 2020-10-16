@@ -1,6 +1,38 @@
 --hs.logger.defaultLogLevel = "verbose"
 require("hs.ipc") -- to enable cli interaction
 
+-- global config
+config = {
+  apps = {
+    terms    = { 'iterm2'                   },
+    browsers = { 'Opera', 'Firefox', 'Google Chrome', 'Safari' }
+  },
+
+  wm = {
+    defaultDisplayLayouts = {
+      ['Color LCD']    = 'monocle',
+      ['C49RG9x'] = 'main-center'
+    },
+
+    displayLayouts = {
+      ['Color LCD']    = { 'monocle', 'main-right', 'side-by-side'     },
+      ['C49RG9x'] = { 'main-center', 'main-right', 'side-by-side' }
+    }
+  },
+
+  window = {
+    highlightBorder = false,
+    highlightMouse  = true,
+    historyLimit    = 0
+  },
+
+  network = {
+    home = 'andersens'
+  }
+}
+
+--hswm = require("hswm")
+
 -- SpoonInstall is the only spoon you need to install manually.
 -- http://www.hammerspoon.org/Spoons/SpoonInstall.html
 -- Once installed other spoons can be automatically installed.
@@ -24,8 +56,13 @@ Install:andUse("ReloadConfiguration",
 )
 
 
+-- If you want to set the layouts that are enabled
+--tiling.set('layouts', {
+--  'fullscreen', 'main-vertical'
+--})
 
-Install:andUse("UnsplashZ")
+
+--Install:andUse("UnsplashZ")
 
 --[[ht = hs.loadSpoon("HammerText")
 ht.keywords ={
@@ -57,7 +94,7 @@ Install:andUse("WindowGrid",
                }
 ) 
 
-Install:andUse("PasswordGenerator",
+pwdgen = Install:andUse("PasswordGenerator",
                {
                  config = {
                    password_style = "xkcd",
@@ -66,10 +103,11 @@ Install:andUse("PasswordGenerator",
                    word_separators = "-",
                    word_uppercase = 1
                  }, hotkeys = {  
-                  copypaste =  {hyper,"x"} 
+                  copypastePassword =  {hyper,"x"} 
                 }
                }
 )
+
 
 local hotkey = require "hs.hotkey"
 local grid = require "hs.grid"
@@ -141,6 +179,13 @@ hotkey.bind(hyper, 'm', grid.maximizeWindow)
 
 Install:andUse("Keychain")
 spoon.Keychain.logger.defaultLogLevel = "verbddose"
+
+
+function pdfpenimprint()
+  print("Imprinting it all...")
+  hs.osascript.applescriptFromFile("allpageswithtext.applescript")
+end
+hotkey.bind(hypersmash, 'p', pdfpenimprint)
 
 
 function mountdrives()
@@ -266,7 +311,6 @@ sharedbigwl=hs.window.layout.new({ -- shared big layout
     {{['Textual IRC Client']={allowRoles="AXStandardWindow"}}, 'tile [12.5,0,31.25,100] 0,0'},
     {'Messages', 'tile [12.5,6,31.25,50] 0,0'},
     {'DevHub', 'tile [0,0,31.25,100] 0,0'},
-    
     {'iTerm2', 'tile [62.50,0,81.25,100] 0,0'},
     {'Spotify','tile [62.50,50,100,100] 0,0'},
     {{['BusyCal']={rejectTitles={"General"}, allowRoles="AXStandardWindow"}}, 'tile [62.50,0,100,100] 0,0'},
@@ -274,7 +318,7 @@ sharedbigwl=hs.window.layout.new({ -- shared big layout
 
 --focusbrowserwl:start()
 --focusmailwl:start()–
-sharedbigwl:start()
+--sharedbigwl:start()
 
 
 layouts = {
@@ -355,7 +399,7 @@ function applyLayout(layout)
   print("Starting layouts")
   for _, lo in ipairs(currentLayout.layouts) do
     print(lo)
-    lo:start()
+  --  lo:start()
   end
 
   -- hide every app
@@ -412,14 +456,15 @@ hs.hotkey.bind(hyper, ';', function()
           layoutChooser:show()
 end)
 
-hs.screen.watcher.new(function()
-    if not currentLayout then return end
 
-    applyLayout(currentLayout)
-end):start()
+-- hs.screen.watcher.new(function()
+--    if not currentLayout then return end
 
+ --   applyLayout(currentLayout)
 
-applyLayout(layouts[1])
+--end):start()
+
+--applyLayout(layouts[1])
 
 -- magic layouts
 
@@ -439,7 +484,7 @@ end
 
 hs.window.filter.default:subscribe(hs.window.filter.windowFocused,
                                    function(window, appName)
-                                     if true then
+                                     if false then
                                        print('Created: -' .. window:title() .. '- role: -' .. window:role() .. '-' .. window:subrole() .. " - " .. appName)
                                        print(hs.inspect(window))
                                        print(window:isStandard())
@@ -452,6 +497,8 @@ end)
 function cell(x,y,w,h)
   return string.format("[%s,%s,%s,%s]", x*6.25, y*25, w*6.25, h*25)
 end
+
+
 
 
 -- pause/toggle live layouts
@@ -497,6 +544,7 @@ end
 wifiWatcher = hs.wifi.watcher.new(wifiwatcher)
 wifiWatcher:watchingFor({"SSIDChange", "linkChange", "powerChange"})
 wifiWatcher:start()
+
 
 -- show logo to indicate restart
 Install:andUse('FadeLogo')
