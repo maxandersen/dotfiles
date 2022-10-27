@@ -44,7 +44,7 @@ Install=spoon.SpoonInstall
 local hyper = {"alt", "cmd"}
 local hypershift = { "alt", "cmd", "shift" }
 local hypersmash = {"alt", "cmd", "ctrl" }
-
+local meh = {"alt","shift","ctrl"}
 -- ReloadConfiguration to restart Hammerspoon
 -- As I often ended up wit partial configs tat would
 -- fail to load i clear te watch paths and just use te otkey.
@@ -103,7 +103,7 @@ pwdgen = Install:andUse("PasswordGenerator",
                    word_separators = "-",
                    word_uppercase = 1
                  }, hotkeys = {  
-                  copypastePassword =  {hyper,"x"} 
+                  copypaste =  {hyper,"x"} 
                 }
                }
 )
@@ -111,6 +111,27 @@ pwdgen = Install:andUse("PasswordGenerator",
 
 local hotkey = require "hs.hotkey"
 local grid = require "hs.grid"
+
+--- start quick open applications 
+function open_app(name)
+  return function()
+      hs.application.launchOrFocus(name)
+      if name == 'Finder' then
+          hs.appfinder.appFromName(name):activate()
+      end
+  end
+end
+
+hs.hotkey.bind(meh,"m",open_app("MailMate"))
+hs.hotkey.bind(meh,"b",open_app("BusyCal"))
+hs.hotkey.bind(meh,"r",open_app("Rambox"))
+
+hs.hotkey.bind(meh,"e",open_app("Ecamm Live Beta")) 
+hs.hotkey.bind(meh,"i",open_app("iTerm"))
+hs.hotkey.bind(meh,"p",open_app("1Password 7"))
+
+
+
 
 hs.hotkey.bind(hypersmash, "f", function() 
   local win = hs.window.focusedWindow()
@@ -280,19 +301,20 @@ focusbrowserwl=hs.window.layout.new({
     -- allowScreens='0,0' so that it only applies to windows on the main screen, 
     -- so in desk mode i can temporarily "tear off" Safari windows to the side 
     -- screens for manual management
-    {{['Opera']={allowScreens='0,0', hasTitlebar=true,fullscreen=false,rejectTitles={'^Address bar drop down$'}}},
+    -- {{['Opera']={allowScreens='0,0', hasTitlebar=true,fullscreen=false,rejectTitles={'^Address bar drop down$'}}},
+    {{['Firefox']={allowScreens='0,0', hasTitlebar=true,fullscreen=false}},
       -- main window in the middle, 2 windows tiled on the left side, remaining 
       -- windows on the right; the selector "closest" lets me change the "main" 
       -- window by sloppily moving it to the center (I use hs.grid)
       'move 1 closest [31.25,0,62.50,100] 0,0 | tile 2 vert [0,0,31.25,100] 0,0',
       'tile all 2x1 [62.5,0,100,100] 0,0'},
     { hs.window.filter.new(
-        { MailMate = { allowRoles = "AXStandardWindow", rejectTitles="Activity Viewer" } }), "tile 2 focused 2x1 [0,0,31.25,100] 0,0" }
+        { MailMate = { allowRoles = "AXStandardWindow", rejectTitles="Activity Viewer" } }), "tile 2 focused 2x1 [62.50,0,100,100] 0,0" }
 }, "FocusBrowser")
 
 focusmailwl=hs.window.layout.new({
     screens={['C49RG9x']="0,0"},
-    {{['Opera']={allowScreens='0,0', hasTitlebar=true,fullscreen=false,rejectTitles={'^Address bar drop down$'}}},
+    {{['Firefox']={allowScreens='0,0', hasTitlebar=true,fullscreen=false,rejectTitles={'^Address bar drop down$'}}},
       "tile 2 focused 2x1 [0,0,31.25,100] 0,0"    },
     { hs.window.filter.new(
         { MailMate = { allowRoles = "AXStandardWindow", rejectTitles="Activity Viewer" } }),
@@ -313,11 +335,12 @@ sharedbigwl=hs.window.layout.new({ -- shared big layout
     {'DevHub', 'tile [0,0,31.25,100] 0,0'},
     {'iTerm2', 'tile [62.50,0,81.25,100] 0,0'},
     {'Spotify','tile [62.50,50,100,100] 0,0'},
-    {{['BusyCal']={rejectTitles={"General"}, allowRoles="AXStandardWindow"}}, 'tile [62.50,0,100,100] 0,0'},
+    {{['BusyCal']={rejectTitles={"General"}, allowRoles="AXStandardWindow"}}, 'tile [0,0,31.25,100] 0,0'},
    },'SharedBig')
 
 --focusbrowserwl:start()
 --focusmailwl:start()–
+
 --sharedbigwl:start()
 
 
@@ -326,7 +349,7 @@ layouts = {
     name="Writing Docs",
     description="Google Doc For fun and profit",
     apps={
-      {"Opera"},
+      {"Firefox"},
       {"Tweetbot"},
       {"MailMate"}
     },
@@ -354,7 +377,7 @@ layouts = {
     name="streaming",
     description="Kill anything that can interrupt",
     apps={
-      {"Opera"},
+      {"Firefox"},
       {"Bluejeans"},
       {"Ecamm Live"},
     },
@@ -377,6 +400,7 @@ currentLayout = nil
 
 -- launch apps if needed and apply layout
 function applyLayout(layout)
+
   local screen = hs.screen.mainScreen()
 
   local chosenApps = layout.apps
@@ -399,7 +423,7 @@ function applyLayout(layout)
   print("Starting layouts")
   for _, lo in ipairs(currentLayout.layouts) do
     print(lo)
-  --  lo:start()
+    lo:start()
   end
 
   -- hide every app
@@ -436,7 +460,7 @@ end
 layoutChooser = hs.chooser.new(function(selection)
     if not selection then return end
 
-    applyLayout(layouts[selection.index])
+    --applyLayout(layouts[selection.index])
 end)
 i = 0
 layoutChooser:choices(hs.fnutils.imap(layouts, function(layout)
