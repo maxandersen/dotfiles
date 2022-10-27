@@ -1,19 +1,24 @@
 [user]
-	name = Max Rydahl Andersen
-	email = max@xam.dk
+   name = Max Rydahl Andersen
+	email = max.andersen@gmail.com
+
+[includeIf "gitdir:personal/"]
+  path = .gitconfig-github
+[includeIf "gitdir:work/"]
+  path = .gitconfig-work
 
 [alias]
 	 squash = "!f(){ CUR=`git rev-parse HEAD` && git reset --soft ${1} && git commit -m \"$(git log --format=%B ${1}..${CUR})\"; };f"
-	ch = "!sh -c 'git rebase -i HEAD~$1' -"
+	ch = !sh -c 'git rebase -i HEAD~$1' -
         co = checkout
         cp = cherry-pick
         st = status -s
         cl = clone
         ci = commit
         co = checkout
-        br = branch 
+        br = branch
         diff = diff --word-diff
-        dc = diff --cached	
+        dc = diff --cached
 	unadd = reset HEAD
 	lg = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr, %an/%cn)%Creset' --abbrev-commit --date=relative
         ll = log --pretty=format:'%C(red)%h%Cred%d %Creset %s %Cgreen(%cr, %an/%cn)' --decorate --numstat --date=relative
@@ -24,13 +29,17 @@
 	whatadded = log --diff-filter=A
 	fdiff = diff --name-status
 	chlogm = !sh -c 'git log $1...$2  --pretty=format:\"* %s [%h](http://github.com/$3/$4/commit/%H) %aN\"' -
+	AMEND = commit --amend --no-edit
+	add = prelude.jsh
+	browse = echo ALIAS WINS
 [core]
 	autocrlf = input
 	excludesfile = /Users/max/.gitignore
 	pager = less -F -X
+	editor = code --wait
 [difftool "sourcetree"]
 	cmd = opendiff \"$LOCAL\" \"$REMOTE\"
-	path = 
+	path =
 [mergetool "sourcetree"]
 	cmd = /Applications/SourceTree.app/Contents/Resources/opendiff-w.sh \"$LOCAL\" \"$REMOTE\" -ancestor \"$BASE\" -merge \"$MERGED\"
 	trustExitCode = true
@@ -77,7 +86,24 @@
 [hub]
 	protocol = https
 [filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
 [mergetool "vscode"]
 	cmd = "code-insiders --wait "
 [difftool "vscode"]
 	cmd = "code-insiders --wait --diff  "
+[filesystem "AdoptOpenJDK|11.0.8|/dev/disk1s1"]
+	timestampResolution = 10000 nanoseconds
+	minRacyThreshold = 0 nanoseconds
+[pull]
+	ff = only
+[filesystem "GraalVM Community|11.0.7|/dev/disk1s1"]
+	timestampResolution = 7000 nanoseconds
+	minRacyThreshold = 0 nanoseconds
+[filesystem "AdoptOpenJDK|1.8.0_262|/dev/disk1s1"]
+	timestampResolution = 1001 milliseconds
+	minRacyThreshold = 0 nanoseconds
+[init]
+	defaultBranch = main
